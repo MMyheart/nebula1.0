@@ -327,4 +327,76 @@ std::string YieldSentence::toString() const {
     }
     return buf;
 }
+
+std::string ScanSentence::toString() const {
+    std::string buf;
+    buf.reserve(256);
+    buf += "SCAN VERTEX ";
+    buf += tag();
+    buf += " ";
+    buf += "PART " + partition()->toString();
+    if (from() != nullptr) {
+        buf += " ";
+        buf += "FROM " + from()->toString();
+    }
+    if (limit() != nullptr) {
+        buf += " ";
+        buf += "LIMIT " + limit()->toString();
+    }
+    return buf;
+}
+
+std::string SampleNBSentence::toString() const {
+    std::string buf;
+    buf.reserve(256);
+    buf += "SAMPLENB ";
+    if (fromClause_ != nullptr) {
+        buf += " ";
+        buf += fromClause_->toString();
+    }
+    if (overClause_ != nullptr) {
+        buf += " ";
+        buf += overClause_->toString();
+    }
+    if (whereClause_ != nullptr) {
+        buf += " ";
+        buf += whereClause_->toString();
+    }
+    buf += " ";
+    buf += folly::stringPrintf("LIMIT %ld", count_);
+    return buf;
+}
+
+std::string SampleSentence::toString() const {
+    std::string buf;
+    buf.reserve(256);
+    buf += "SAMPLE ";
+    if (sampleLabels_ != nullptr) {
+        buf += sampleLabels_->toString();
+    }
+    buf += folly::stringPrintf("LIMIT %d", count_);
+    return buf;
+}
+
+std::string RandomWalkSentence::toString() const {
+    std::string buf;
+    buf.reserve(256);
+    buf += "RANDOMWALK ";
+    if (fromClause_ != nullptr) {
+        buf += " ";
+        buf += fromClause_->toString();
+    }
+    if (overClause_ != nullptr) {
+        buf += " ";
+        buf += overClause_->toString();
+    }
+    if (whereClause_ != nullptr) {
+        buf += " ";
+        buf += whereClause_->toString();
+    }
+    buf += " ";
+    buf += folly::stringPrintf("WALKLEN %ld", walkLen_);
+    return buf;
+}
+
 }   // namespace nebula

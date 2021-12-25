@@ -29,6 +29,7 @@ TEST(StorageServiceHandlerTest, FutureAddVerticesTest) {
     auto schemaMan = TestUtils::mockSchemaMan();
     auto indexMan = TestUtils::mockIndexMan();
     auto storageServiceHandler = std::make_unique<StorageServiceHandler>(kvstore.get(),
+                                                                         nullptr,
                                                                          schemaMan.get(),
                                                                          indexMan.get(),
                                                                          nullptr);

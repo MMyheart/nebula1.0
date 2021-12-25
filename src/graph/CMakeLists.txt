@@ -59,6 +59,7 @@ nebula_add_library(
     LimitExecutor.cpp
     GroupByExecutor.cpp
     ReturnExecutor.cpp
+    ScanExecutor.cpp
     CreateSnapshotExecutor.cpp
     DropSnapshotExecutor.cpp
     AdminJobExecutor.cpp
@@ -66,6 +67,10 @@ nebula_add_library(
     UserExecutor.cpp
     PrivilegeExecutor.cpp
     CloudAuthenticator.cpp
+    SampleNBExecutor.cpp
+    SampleExecutor.cpp
+    RandomWalkExecutor.cpp
+    RebuildSampleExecutor.cpp
 )
 nebula_add_subdirectory(test)
 

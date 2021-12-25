@@ -39,6 +39,7 @@ reserved_key_words = [
     'KW_DELETE',
     'KW_FIND',
     'KW_LOOKUP',
+    'KW_SCAN',
     'KW_ALTER',
     'KW_STEPS',
     'KW_OVER',
@@ -94,7 +95,10 @@ reserved_key_words = [
     'KW_IS',
     'KW_NULL',
     'KW_FORCE',
-    'KW_RECOVER'
+    'KW_RECOVER',
+    'KW_SAMPLE',
+    'KW_SAMPLENB',
+    'KW_RANDOMWALK'
 ]
 
 

@@ -644,6 +644,156 @@ private:
     std::unique_ptr<YieldClause>   yieldClause_;
 };
 
+class ScanSentence final : public Sentence {
+public:
+    ScanSentence(std::string *tag, Expression *partition, Expression *from, Expression *limit) {
+        tag_.reset(tag);
+        partition_.reset(partition);
+        from_.reset(from);
+        limit_.reset(limit);
+        kind_ = Kind::kScan;
+    }
+
+    const std::string &tag() const {
+        return *tag_;
+    }
+
+    Expression *partition() const {
+        return partition_.get();
+    }
+
+    Expression *from() const {
+        return from_.get();
+    }
+
+    Expression *limit() const {
+        return limit_.get();
+    }
+
+    std::string toString() const override;
+
+private:
+    std::unique_ptr<std::string> tag_;
+    std::unique_ptr<Expression> partition_;
+    std::unique_ptr<Expression> from_;
+    std::unique_ptr<Expression> limit_;
+};
+
+class SampleNBSentence final : public Sentence {
+public:
+    explicit SampleNBSentence(int64_t count) : count_(count) {
+        kind_ = Kind::KSampleNB;
+    }
+
+    void setFromClause(FromClause *clause) {
+        fromClause_.reset(clause);
+    }
+
+    void setOverClause(OverClause *clause) {
+        overClause_.reset(clause);
+    }
+
+    void setWhereClause(WhereClause *clause) {
+        whereClause_.reset(clause);
+    }
+
+    const FromClause *fromClause() const {
+        return fromClause_.get();
+    }
+
+    const OverClause *overClause() const {
+        return overClause_.get();
+    }
+
+    const WhereClause *whereClause() const {
+        return whereClause_.get();
+    }
+
+    int64_t count() const {
+        return count_;
+    }
+
+    std::string toString() const override;
+
+private:
+    std::unique_ptr<FromClause> fromClause_;
+    std::unique_ptr<OverClause> overClause_;
+    std::unique_ptr<WhereClause> whereClause_;
+    int64_t count_{-1};
+};
+
+class SampleSentence final : public Sentence {
+public:
+    SampleSentence(SampleLabels *labels, int32_t count, bool isSampleVertex = false) {
+        sampleLabels_.reset(labels);
+        count_ = count;
+        isSampleVertex_ = isSampleVertex;
+        if (isSampleVertex_) {
+            kind_ = Kind::kSampleVertex;
+        } else {
+            kind_ = Kind::kSampleEdge;
+        }
+    }
+
+    SampleLabels *sampleLabels() const {
+        return sampleLabels_.get();
+    }
+
+    int32_t count() const {
+        return count_;
+    }
+
+    std::string toString() const override;
+
+private:
+    std::unique_ptr<SampleLabels> sampleLabels_;
+    int32_t count_{-1};
+    bool isSampleVertex_{false};
+};
+
+class RandomWalkSentence final : public Sentence {
+public:
+    explicit RandomWalkSentence(uint64_t walkLen) : walkLen_(walkLen) {
+        kind_ = Kind::KRandomWalk;
+    }
+
+    void setFromClause(FromClause *clause) {
+        fromClause_.reset(clause);
+    }
+
+    void setOverClause(OverClause *clause) {
+        overClause_.reset(clause);
+    }
+
+    void setWhereClause(WhereClause *clause) {
+        whereClause_.reset(clause);
+    }
+
+    const FromClause *fromClause() const {
+        return fromClause_.get();
+    }
+
+    const OverClause *overClause() const {
+        return overClause_.get();
+    }
+
+    const WhereClause *whereClause() const {
+        return whereClause_.get();
+    }
+
+    uint64_t walkLen() const {
+        return walkLen_;
+    }
+
+    std::string toString() const override;
+
+private:
+    std::unique_ptr<FromClause> fromClause_;
+    std::unique_ptr<OverClause> overClause_;
+    std::unique_ptr<WhereClause> whereClause_;
+    uint64_t walkLen_{0};
+};
+
 }   // namespace nebula
 #endif  // PARSER_TRAVERSESENTENCES_H_
 

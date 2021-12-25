@@ -16,6 +16,7 @@ set(PARSER_TEST_LIBS
     $<TARGET_OBJECTS:thrift_obj>
     $<TARGET_OBJECTS:thread_obj>
     $<TARGET_OBJECTS:base_obj>
+    $<TARGET_OBJECTS:rand_obj>
 )
 
 nebula_add_test(

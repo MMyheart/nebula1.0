@@ -11,11 +11,12 @@
 #include "base/Base.h"
 #include "interface/gen-cpp2/StorageService.h"
 #include "kvstore/KVStore.h"
-#include "meta/SchemaManager.h"
+#include "kvstore/StatisticStore.h"
 #include "meta/IndexManager.h"
+#include "meta/SchemaManager.h"
+#include "stats/Stats.h"
 #include "stats/StatsManager.h"
 #include "storage/CommonUtils.h"
-#include "stats/Stats.h"
 
 DECLARE_int32(vertex_cache_num);
 DECLARE_int32(vertex_cache_bucket_exp);
@@ -30,14 +31,16 @@ class StorageServiceHandler final : public cpp2::StorageServiceSvIf {
 
 public:
     StorageServiceHandler(kvstore::KVStore* kvstore,
+                          kvstore::StatisticStore* statisticStore,
                           meta::SchemaManager* schemaMan,
                           meta::IndexManager* indexMan,
                           meta::MetaClient* client)
-        : kvstore_(kvstore)
-        , schemaMan_(schemaMan)
-        , indexMan_(indexMan)
-        , metaClient_(client)
-        , vertexCache_(FLAGS_vertex_cache_num, FLAGS_vertex_cache_bucket_exp) {
+        : kvstore_(kvstore),
+          statisticStore_(statisticStore),
+          schemaMan_(schemaMan),
+          indexMan_(indexMan),
+          metaClient_(client),
+          vertexCache_(FLAGS_vertex_cache_num, FLAGS_vertex_cache_bucket_exp) {
         if (FLAGS_reader_handlers_type == "io") {
             auto tf = std::make_shared<folly::NamedThreadFactory>("reader-pool");
             readerPool_ = std::make_shared<folly::IOThreadPoolExecutor>(FLAGS_reader_handlers,
@@ -67,6 +70,8 @@ public:
         putKvQpsStat_ = stats::Stats("storage", "put_kv");
         lookupVerticesQpsStat_ = stats::Stats("storage", "lookup_vertices");
         lookupEdgesQpsStat_ = stats::Stats("storage", "lookup_edges");
+        sampleVertexQpsStat_ = stats::Stats("storage", "sample_vertex");
+        sampleEdgeQpsStat_ = stats::Stats("storage", "sample_edge");
     }
 
     folly::Future<cpp2::QueryResponse>
@@ -157,8 +162,18 @@ public:
     folly::Future<cpp2::LookUpIndexResp>
     future_lookUpIndex(const cpp2::LookUpIndexRequest& req) override;
 
+    folly::Future<cpp2::SampleVertexResp>
+    future_sampleVertex(const cpp2::SampleVertexRequest& req) override;
+
+    folly::Future<cpp2::SampleEdgeResp>
+    future_sampleEdge(const cpp2::SampleEdgeRequest& req) override;
+
+    folly::Future<cpp2::RebuildSampleResponse>
+    future_rebuildSample(const cpp2::RebuildSampleRequest& req) override;
+
 private:
     kvstore::KVStore* kvstore_{nullptr};
+    kvstore::StatisticStore* statisticStore_{nullptr};
     meta::SchemaManager* schemaMan_{nullptr};
     meta::IndexManager* indexMan_{nullptr};
     meta::MetaClient* metaClient_{nullptr};
@@ -180,6 +195,8 @@ private:
     stats::Stats putKvQpsStat_;
     stats::Stats lookupVerticesQpsStat_;
     stats::Stats lookupEdgesQpsStat_;
+    stats::Stats sampleVertexQpsStat_;
+    stats::Stats sampleEdgeQpsStat_;
 };
 
 }  // namespace storage

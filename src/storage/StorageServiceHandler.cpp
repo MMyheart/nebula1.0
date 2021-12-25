@@ -13,6 +13,8 @@
 #include "storage/query/GetUUIDProcessor.h"
 #include "storage/query/ScanEdgeProcessor.h"
 #include "storage/query/ScanVertexProcessor.h"
+#include "storage/query/SampleVertexProcessor.h"
+#include "storage/query/SampleEdgeProcessor.h"
 #include "storage/mutate/AddVerticesProcessor.h"
 #include "storage/mutate/AddEdgesProcessor.h"
 #include "storage/mutate/DeleteVerticesProcessor.h"
@@ -28,6 +30,7 @@
 #include "storage/admin/RebuildTagIndexProcessor.h"
 #include "storage/admin/RebuildEdgeIndexProcessor.h"
 #include "storage/index/LookUpIndexProcessor.h"
+#include "storage/admin/RebuildSampleProcessor.h"
 
 #define RETURN_FUTURE(processor) \
     auto f = processor->getFuture(); \
@@ -261,6 +264,26 @@ StorageServiceHandler::future_lookUpIndex(const cpp2::LookUpIndexRequest& req) {
                                                      &lookupVerticesQpsStat_,
                                                      executor,
                                                      &vertexCache_);
+    RETURN_FUTURE(processor);
+}
+
+folly::Future<cpp2::SampleVertexResp> StorageServiceHandler::future_sampleVertex(
+    const cpp2::SampleVertexRequest& req) {
+    auto* processor =
+        SampleVertexProcessor::instance(statisticStore_, schemaMan_, &sampleVertexQpsStat_);
+    RETURN_FUTURE(processor);
+}
+
+folly::Future<cpp2::SampleEdgeResp> StorageServiceHandler::future_sampleEdge(
+    const cpp2::SampleEdgeRequest& req) {
+    auto* processor =
+        SampleEdgeProcessor::instance(statisticStore_, schemaMan_, &sampleEdgeQpsStat_);
+    RETURN_FUTURE(processor);
+}
+
+folly::Future<cpp2::RebuildSampleResponse> StorageServiceHandler::future_rebuildSample(
+    const cpp2::RebuildSampleRequest& req) {
+    auto* processor = RebuildSampleProcessor::instance(kvstore_, statisticStore_, schemaMan_);
     RETURN_FUTURE(processor);
 }
 

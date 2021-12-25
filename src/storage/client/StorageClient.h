@@ -190,6 +190,29 @@ public:
         bool isEdge,
         folly::EventBase *evb = nullptr);
 
+    folly::SemiFuture<StatusOr<storage::cpp2::ScanVertexResponse>> ScanVertex(
+        GraphSpaceID space,
+        PartitionID partId,
+        std::string cursor,
+        std::unordered_map<TagID, std::vector<storage::cpp2::PropDef>> return_columns,
+        bool all_columns,
+        int32_t limit,
+        int64_t start_time,
+        int64_t end_time,
+        folly::EventBase* evb = nullptr);
+
+    folly::SemiFuture<StorageRpcResponse<storage::cpp2::SampleVertexResp>> sampleVertex(
+        GraphSpaceID space,
+        const std::vector<TagID>& tagIds,
+        const int32_t count,
+        folly::EventBase* evb = nullptr);
+
+    folly::SemiFuture<StorageRpcResponse<storage::cpp2::SampleEdgeResp>> sampleEdge(
+        GraphSpaceID space,
+        const std::vector<EdgeType>& edgeTypes,
+        const int32_t count,
+        folly::EventBase* evb = nullptr);
+
 protected:
     // Calculate the partition id for the given vertex id
     StatusOr<PartitionID> partId(GraphSpaceID spaceId, int64_t id) const;

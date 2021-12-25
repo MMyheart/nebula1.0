@@ -1158,6 +1158,33 @@ TEST(Parser, Lookup) {
     }
 }
 
+TEST(Parser, Scan) {
+    {
+        GQLParser parser;
+        std::string query = "SCAN VERTEX person PART 1 FROM 0 LIMIT 100";
+        auto result = parser.parse(query);
+        ASSERT_TRUE(result.ok()) << result.status();
+    }
+    {
+        GQLParser parser;
+        std::string query = "SCAN VERTEX person PART 1 LIMIT 100";
+        auto result = parser.parse(query);
+        ASSERT_TRUE(result.ok()) << result.status();
+    }
+    {
+        GQLParser parser;
+        std::string query = "SCAN VERTEX person PART 1 LIMIT 100";
+        auto result = parser.parse(query);
+        ASSERT_TRUE(result.ok()) << result.status();
+    }
+    {
+        GQLParser parser;
+        std::string query = "SCAN VERTEX person PART 1";
+        auto result = parser.parse(query);
+        ASSERT_TRUE(result.ok()) << result.status();
+    }
+}
+
 TEST(Parser, AdminOperation) {
     {
         GQLParser parser;
@@ -2079,4 +2106,20 @@ TEST(Parser, UseReservedKeyword) {
         ASSERT_TRUE(result.ok());
     }
 }
+
+TEST(Parser, Sample) {
+    {
+        GQLParser parser;
+        std::string query = "SAMPLE VERTEX person LIMIT 1";
+        auto result = parser.parse(query);
+        ASSERT_TRUE(result.ok()) << result.status();
+    }
+    {
+        GQLParser parser;
+        std::string query = "SAMPLE EDGE friend LIMIT 1";
+        auto result = parser.parse(query);
+        ASSERT_TRUE(result.ok()) << result.status();
+    }
+}
+
 }   // namespace nebula

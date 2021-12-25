@@ -172,6 +172,8 @@ bool MetaClient::loadData() {
     decltype(spaceTagIndexById_)     spaceTagIndexById;
     decltype(spaceAllEdgeMap_)       spaceAllEdgeMap;
     decltype(spaceAllTagMap_)        spaceAllTagMap;
+    decltype(tagIdHostWeights_)      spaceTagIdHostWeights;
+    decltype(edgeTypeHostWeights_)   spaceEdgeTypeHostWeights;
 
     for (auto space : ret.value()) {
         auto spaceId = space.first;
@@ -204,6 +206,43 @@ bool MetaClient::loadData() {
             return false;
         }
 
+        auto s = listSampleStatus(spaceId, false).get();
+        if (!s.ok()) {
+            LOG(ERROR) << "Get sample status failed for spaceId " << spaceId << ", status "
+                       << s.status();
+            return false;
+        }
+        // load sample status and weights
+        auto sampleStatus = s.value();
+        bool sampleSucceeded = !sampleStatus.get_statuses()->empty();
+        for (auto status = sampleStatus.get_statuses()->begin();
+             status != sampleStatus.get_statuses()->end();
+             status++) {
+            if (status->get_status() != "SUCCEEDED") {
+                sampleSucceeded = false;
+                break;
+            }
+        }
+        spaceTagIdHostWeights.erase(spaceId);
+        spaceEdgeTypeHostWeights.erase(spaceId);
+        if (sampleSucceeded) {
+            std::unordered_map<TagID, std::unordered_map<std::string, double>> tagIdHostWeights;
+            for (auto& iter : *sampleStatus.get_tagIdWeights()) {
+                for (auto weight : iter.second) {
+                    tagIdHostWeights[iter.first][weight.get_hostStr()] = weight.get_weight();
+                }
+            }
+            std::unordered_map<EdgeType, std::unordered_map<std::string, double>>
+                edgeTypeHostWeights;
+            for (auto& iter : *sampleStatus.get_edgeTypeWeights()) {
+                for (auto weight : iter.second) {
+                    edgeTypeHostWeights[iter.first][weight.get_hostStr()] = weight.get_weight();
+                }
+            }
+            spaceTagIdHostWeights[spaceId] = tagIdHostWeights;
+            spaceEdgeTypeHostWeights[spaceId] = edgeTypeHostWeights;
+        }
+
         if (!loadIndexes(spaceId,
                          spaceCache)) {
             LOG(ERROR) << "Load Indexes Failed";
@@ -227,6 +266,8 @@ bool MetaClient::loadData() {
         spaceTagIndexById_     = std::move(spaceTagIndexById);
         spaceAllEdgeMap_       = std::move(spaceAllEdgeMap);
         spaceAllTagMap_        = std::move(spaceAllTagMap);
+        tagIdHostWeights_      = std::move(spaceTagIdHostWeights);
+        edgeTypeHostWeights_   = std::move(spaceEdgeTypeHostWeights);
     }
     localDataLastUpdateTime_.store(metadLastUpdateTime_.load());
     diff(oldCache, localCache_);
@@ -1435,6 +1476,44 @@ MetaClient::listTagIndexStatus(GraphSpaceID spaceID) {
     return future;
 }
 
+folly::Future<StatusOr<bool>> MetaClient::rebuildSample(GraphSpaceID spaceID,
+                                                        std::vector<TagID> tagIds,
+                                                        std::vector<EdgeType> edgeTypes,
+                                                        bool force) {
+    cpp2::RebuildSampleReq req;
+    req.set_space_id(spaceID);
+    req.set_tagIds(std::move(tagIds));
+    req.set_edgeTypes(std::move(edgeTypes));
+    req.set_force(force);
+
+    folly::Promise<StatusOr<bool>> promise;
+    auto future = promise.getFuture();
+    getResponse(
+        std::move(req),
+        [](auto client, auto request) { return client->future_rebuildSample(request); },
+        [](cpp2::ExecResp&& resp) -> bool { return resp.code == cpp2::ErrorCode::SUCCEEDED; },
+        std::move(promise),
+        true);
+    return future;
+}
+
+folly::Future<StatusOr<cpp2::ListSampleStatusResp>> MetaClient::listSampleStatus(
+    GraphSpaceID spaceId,
+    bool remove) {
+    cpp2::ListSampleStatusReq req;
+    req.set_space_id(spaceId);
+    req.set_remove(remove);
+    folly::Promise<StatusOr<cpp2::ListSampleStatusResp>> promise;
+    auto future = promise.getFuture();
+    getResponse(
+        std::move(req),
+        [](auto client, auto request) { return client->future_listSampleStatus(request); },
+        [](cpp2::ListSampleStatusResp&& resp) -> decltype(auto) { return std::move(resp); },
+        std::move(promise),
+        true);
+    return future;
+}
+
 folly::Future<StatusOr<IndexID>>
 MetaClient::createEdgeIndex(GraphSpaceID spaceID,
                             std::string  indexName,
@@ -2357,6 +2436,22 @@ StatusOr<LeaderMap> MetaClient::loadLeader() {
     }
     LOG(INFO) << "Load leader ok";
     return leaderMap;
+}
+
+StatusOr<std::unordered_map<TagID, std::unordered_map<std::string, double>>>
+MetaClient::getTagIdHostWeights(GraphSpaceID spaceId) {
+    if (tagIdHostWeights_.find(spaceId) == tagIdHostWeights_.end()) {
+        return Status::Error("Not ready!");
+    }
+    return tagIdHostWeights_[spaceId];
+}
+
+StatusOr<std::unordered_map<EdgeType, std::unordered_map<std::string, double>>>
+MetaClient::getEdgeTypeHostWeights(GraphSpaceID spaceId) {
+    if (edgeTypeHostWeights_.find(spaceId) == edgeTypeHostWeights_.end()) {
+        return Status::Error("Not ready!");
+    }
+    return edgeTypeHostWeights_[spaceId];
 }
 
 }  // namespace meta

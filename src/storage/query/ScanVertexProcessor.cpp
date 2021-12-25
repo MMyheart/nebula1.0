@@ -1,4 +1,4 @@
-/* Copyright (c) 2019 vesoft inc. All rights reserved.
+/* Copyright (c) 2021 vesoft inc. All rights reserved.
  *
  * This source code is licensed under Apache 2.0 License,
  * attached with Common Clause Condition 1.0, found in the LICENSES directory.
@@ -14,8 +14,7 @@
 #include "meta/NebulaSchemaProvider.h"
 #include "storage/StorageFlags.h"
 
-
-DECLARE_int32(max_scan_block_size);
+DECLARE_int64(max_scan_block_size);
 
 namespace nebula {
 namespace storage {
@@ -29,6 +28,8 @@ void ScanVertexProcessor::process(const cpp2::ScanVertexRequest& req) {
     if (retCode != cpp2::ErrorCode::SUCCEEDED) {
         this->pushResultCode(retCode, partId_);
         this->onFinished();
+        LOG(ERROR) << "scan vertex checkAndBuildContexts error. ret: " << static_cast<int>(retCode)
+                   << " space: " << spaceId_ << " part: " << partId_;
         return;
     }
 
@@ -45,26 +46,45 @@ void ScanVertexProcessor::process(const cpp2::ScanVertexRequest& req) {
     if (kvRet != kvstore::ResultCode::SUCCEEDED) {
         handleErrorCode(kvRet, spaceId_, partId_);
         onFinished();
+        LOG(ERROR) << "scan vertex doRangeWithPrefix error. ret: " << static_cast<int>(kvRet)
+                   << " space: " << spaceId_ << " part: " << partId_;
         return;
     }
 
     std::vector<cpp2::ScanVertex> vertexData;
     int32_t rowCount = 0;
-    int32_t rowLimit = req.get_limit();
-    int64_t startTime = req.get_start_time(), endTime = req.get_end_time();
-    int32_t blockSize = 0;
+    int64_t rowLimit = req.get_limit();
+    int64_t blockSize = 0;
+
+    int64_t vertexCnt = 0;
+    int64_t edgeCnt = 0;
+    int64_t indexCnt = 0;
+    int64_t uuinCnt = 0;
+
+    int64_t matchCnt = 0;
+    int64_t inValidCnt = 0;
+    int64_t unknownCnt = 0;
 
     for (; iter->valid() && rowCount < rowLimit && blockSize < FLAGS_max_scan_block_size;
          iter->next()) {
         auto key = iter->key();
-        if (!NebulaKeyUtils::isVertex(key)) {
-            continue;
+        if (NebulaKeyUtils::isDataKey(key)) {
+            if (NebulaKeyUtils::isEdge(key)) {
+                edgeCnt++;
+            } else if (NebulaKeyUtils::isVertex(key)) {
+                vertexCnt++;
+            } else {
+                inValidCnt++;
+            }
+        } else if (NebulaKeyUtils::isIndexKey(key)) {
+            indexCnt++;
+        } else if (NebulaKeyUtils::isUUIDKey(key)) {
+            uuinCnt++;
+        } else {
+            unknownCnt++;
         }
 
-        // only return data within time range [start, end)
-        TagVersion version = folly::Endian::big(NebulaKeyUtils::getVersion(key));
-        int64_t ts = std::numeric_limits<int64_t>::max() - version;
-        if (FLAGS_enable_multi_versions && (ts < startTime || ts >= endTime)) {
+        if (!NebulaKeyUtils::isVertex(key)) {
             continue;
         }
 
@@ -73,6 +93,7 @@ void ScanVertexProcessor::process(const cpp2::ScanVertexRequest& req) {
         if (ctxIter == tagContexts_.end()) {
             continue;
         }
+        matchCnt++;
 
         VertexID vId = NebulaKeyUtils::getVertexId(key);
         cpp2::ScanVertex data;
@@ -100,6 +121,11 @@ void ScanVertexProcessor::process(const cpp2::ScanVertexRequest& req) {
         blockSize += key.size() + value.size();
     }
 
+    LOG(INFO) << "scan vertex stats."
+              << " edge cnt: " << edgeCnt << " vertex cnt: " << vertexCnt
+              << " index cnt: " << indexCnt << " uuin cnt: " << uuinCnt
+              << " match cnt: " << matchCnt << " invalid cnt: " << inValidCnt
+              << " unknown cnt: " << unknownCnt;
     resp_.set_vertex_schema(std::move(tagSchema_));
     resp_.set_vertex_data(std::move(vertexData));
     if (iter->valid()) {

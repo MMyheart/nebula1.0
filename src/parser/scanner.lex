@@ -50,6 +50,7 @@ WHEN                        ([Ww][Hh][Ee][Nn])
 DELETE                      ([Dd][Ee][Ll][Ee][Tt][Ee])
 FIND                        ([Ff][Ii][Nn][Dd])
 LOOKUP                      ([Ll][Oo][Oo][Kk][Uu][Pp])
+SCAN                        ([Ss][Cc][Aa][Nn])
 ALTER                       ([Aa][Ll][Tt][Ee][Rr])
 STEPS                       ([Ss][Tt][Ee][Pp][Ss]?)
 OVER                        ([Oo][Vv][Ee][Rr])
@@ -157,6 +158,9 @@ BIDIRECT                    ([Bb][Ii][Dd][Ii][Rr][Ee][Cc][Tt])
 ACCOUNT                     ([Aa][Cc][Cc][Oo][Uu][Nn][Tt])
 DBA                         ([Dd][Bb][Aa])
 CONTAINS                    ([Cc][Oo][Nn][Tt][Aa][Ii][Nn][Ss])
+SAMPLE                      ([Ss][Aa][Mm][Pp][Ll][Ee])
+SAMPLENB                    ([Ss][Aa][Mm][Pp][Ll][Ee][Nn][Bb])
+RANDOMWALK                  ([Rr][Aa][Nn][Dd][Oo][Mm][Ww][Aa][Ll][Kk])
 
 LABEL                       ([a-zA-Z][_a-zA-Z0-9]*)
 DEC                         ([0-9])
@@ -197,6 +201,7 @@ RECOVER                     ([Rr][Ee][Cc][Oo][Vv][Ee][Rr])
 {DELETE}                    { return TokenType::KW_DELETE; }
 {FIND}                      { return TokenType::KW_FIND; }
 {LOOKUP}                    { return TokenType::KW_LOOKUP; }
+{SCAN}                      { return TokenType::KW_SCAN; }
 {ALTER}                     { return TokenType::KW_ALTER; }
 {STEPS}                     { return TokenType::KW_STEPS; }
 {OVER}                      { return TokenType::KW_OVER; }
@@ -251,6 +256,9 @@ RECOVER                     ([Rr][Ee][Cc][Oo][Vv][Ee][Rr])
 {IS}                        { return TokenType::KW_IS; }
 {NULL}                      { return TokenType::KW_NULL; }
 {RECOVER}                   { return TokenType::KW_RECOVER; }
+{SAMPLE}                    { return TokenType::KW_SAMPLE;}
+{SAMPLENB}                  { return TokenType::KW_SAMPLENB; }
+{RANDOMWALK}                { return TokenType::KW_RANDOMWALK; }
 
 
  /* Unreserved keyword */

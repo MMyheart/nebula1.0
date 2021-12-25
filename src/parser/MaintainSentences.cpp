@@ -264,4 +264,26 @@ std::string RebuildEdgeIndexSentence::toString() const {
     return folly::stringPrintf("BUILD EDGE INDEX %s", indexName_.get()->c_str());
 }
 
+std::string RebuildSampleSentence::toString() const {
+    std::string buf;
+    buf.reserve(256);
+    buf += "REBUILD SAMPLE ";
+    if (isAll()) {
+        buf += " ALL ";
+    }
+    if (isTag()) {
+        buf += " TAG ";
+    }
+    if (isEdge()) {
+        buf += " EDGE ";
+    }
+    if (sampleLabels_ != nullptr) {
+        buf += sampleLabels_->toString();
+    }
+    if (isForce()) {
+        buf += " FORCE";
+    }
+    return buf;
+}
+
 }   // namespace nebula

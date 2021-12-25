@@ -682,6 +682,54 @@ private:
     bool                                        isOffline_;
 };
 
+class RebuildSampleSentence final : public Sentence {
+    enum Type { ALL, TAG, EDGE };
+
+public:
+    explicit RebuildSampleSentence(SampleLabels *labels, bool isTag, bool force) {
+        sampleLabels_.reset(labels);
+        if (isTag) {
+            type_ = TAG;
+        } else {
+            type_ = EDGE;
+        }
+        force_ = force;
+        kind_ = Kind::KRebuildSample;
+    }
+    explicit RebuildSampleSentence(bool force) {
+        type_ = ALL;
+        force_ = force;
+        kind_ = Kind::KRebuildSample;
+    }
+
+    std::string toString() const override;
+
+    SampleLabels *sampleLabels() const {
+        return sampleLabels_.get();
+    }
+
+    bool isTag() const {
+        return type_ == TAG;
+    }
+
+    bool isEdge() const {
+        return type_ == EDGE;
+    }
+
+    bool isAll() const {
+        return type_ == ALL;
+    }
+
+    bool isForce() const {
+        return force_;
+    }
+
+private:
+    std::unique_ptr<SampleLabels> sampleLabels_;
+    Type type_;
+    bool force_{false};
+};
+
 }   // namespace nebula
 
 #endif  // PARSER_MAINTAINSENTENCES_H_

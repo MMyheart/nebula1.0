@@ -55,6 +55,7 @@ static constexpr size_t MAX_ABS_INTEGER = 9223372036854775808ULL;
     nebula::OverEdge                       *over_edge;
     nebula::OverEdges                      *over_edges;
     nebula::FetchLabels                    *fetch_labels;
+    nebula::SampleLabels                   *sample_labels;
     nebula::OverClause                     *over_clause;
     nebula::WhereClause                    *where_clause;
     nebula::WhenClause                     *when_clause;
@@ -114,18 +115,21 @@ static constexpr size_t MAX_ABS_INTEGER = 9223372036854775808ULL;
 %token KW_GET KW_DECLARE KW_GRAPH KW_META KW_STORAGE
 %token KW_TTL KW_TTL_DURATION KW_TTL_COL KW_DATA KW_STOP
 %token KW_FETCH KW_PROP KW_UPDATE KW_UPSERT KW_WHEN
+%token KW_SAMPLE
 %token KW_ORDER KW_ASC KW_LIMIT KW_OFFSET KW_GROUP
 %token KW_DISTINCT KW_ALL KW_OF
 %token KW_BALANCE KW_LEADER
 %token KW_SHORTEST KW_PATH KW_NOLOOP
 %token KW_IS KW_NULL KW_DEFAULT
 %token KW_SNAPSHOT KW_SNAPSHOTS KW_LOOKUP
+%token KW_SCAN
 %token KW_JOBS KW_JOB KW_RECOVER KW_FLUSH KW_COMPACT KW_SUBMIT
 %token KW_BIDIRECT
 %token KW_USER KW_USERS KW_ACCOUNT
 %token KW_PASSWORD KW_CHANGE KW_ROLE KW_ROLES
 %token KW_GOD KW_ADMIN KW_DBA KW_GUEST KW_GRANT KW_REVOKE KW_ON
 %token KW_CONTAINS
+%token KW_SAMPLENB KW_RANDOMWALK
 
 /* symbols */
 %token L_PAREN R_PAREN L_BRACKET R_BRACKET L_BRACE R_BRACE COMMA
@@ -153,6 +157,7 @@ static constexpr size_t MAX_ABS_INTEGER = 9223372036854775808ULL;
 %type <expr> vid
 %type <expr> function_call_expression
 %type <expr> uuid_expression
+%type <expr> scan_part_clause scan_from_clause scan_limit_clause
 %type <argument_list> argument_list opt_argument_list
 %type <type> type_spec
 %type <step_clause> step_clause
@@ -161,6 +166,7 @@ static constexpr size_t MAX_ABS_INTEGER = 9223372036854775808ULL;
 %type <over_edge> over_edge
 %type <over_edges> over_edges
 %type <fetch_labels> fetch_labels
+%type <sample_labels> sample_labels
 %type <over_clause> over_clause
 %type <where_clause> where_clause
 %type <when_clause> when_clause
@@ -218,6 +224,7 @@ static constexpr size_t MAX_ABS_INTEGER = 9223372036854775808ULL;
 %type <sentence> drop_tag_index_sentence drop_edge_index_sentence
 %type <sentence> describe_tag_index_sentence describe_edge_index_sentence
 %type <sentence> rebuild_tag_index_sentence rebuild_edge_index_sentence
+%type <sentence> rebuild_sample_sentence
 %type <sentence> create_snapshot_sentence drop_snapshot_sentence
 
 %type <sentence> admin_sentence
@@ -231,11 +238,13 @@ static constexpr size_t MAX_ABS_INTEGER = 9223372036854775808ULL;
 %type <sentence> download_sentence ingest_sentence
 
 %type <sentence> traverse_sentence
-%type <sentence> go_sentence match_sentence lookup_sentence find_path_sentence
+%type <sentence> go_sentence match_sentence lookup_sentence find_path_sentence sample_nb_sentence random_walk_sentence
+%type <sentence> scan_sentence
 %type <sentence> group_by_sentence order_by_sentence limit_sentence
 %type <sentence> fetch_sentence fetch_vertices_sentence fetch_edges_sentence
 %type <sentence> set_sentence piped_sentence assignment_sentence
 %type <sentence> yield_sentence use_sentence
+%type <sentence> sample_sentence
 
 %type <sentence> grant_sentence revoke_sentence
 %type <sentence> set_config_sentence get_config_sentence balance_sentence
@@ -607,6 +616,50 @@ go_sentence
     }
     ;
 
+sample_nb_sentence
+    : KW_SAMPLENB from_clause over_clause where_clause KW_LIMIT INTEGER {
+        ifOutOfRange($6, @2);
+        auto sampleNB = new SampleNBSentence($6);
+        sampleNB->setFromClause($2);
+        sampleNB->setOverClause($3);
+        sampleNB->setWhereClause($4);
+        $$ = sampleNB;
+    }
+    ;
+ 
+sample_sentence
+    : KW_SAMPLE KW_VERTEX sample_labels KW_LIMIT INTEGER {
+        ifOutOfRange($5, @2);
+        $$ = new SampleSentence($3, $5, true);
+    }
+    | KW_SAMPLE KW_EDGE sample_labels KW_LIMIT INTEGER {
+        ifOutOfRange($5, @2);
+        $$ = new SampleSentence($3, $5);
+    }
+    ;
+ 
+sample_labels
+    : name_label {
+        $$ = new SampleLabels();
+        $$->addLabel($1);
+    }
+    | sample_labels COMMA name_label {
+        $$ = $1;
+        $$->addLabel($3);
+    }
+    ;
+ 
+random_walk_sentence
+    : KW_RANDOMWALK INTEGER from_clause over_clause where_clause {
+        ifOutOfRange($2, @2);
+        auto randomWalk = new RandomWalkSentence($2);
+        randomWalk->setFromClause($3);
+        randomWalk->setOverClause($4);
+        randomWalk->setWhereClause($5);
+        $$ = randomWalk;
+    }
+    ;
+ 
 step_clause
     : %empty { $$ = new StepClause(); }
     | INTEGER KW_STEPS {
@@ -947,6 +1000,27 @@ fetch_sentence
     : fetch_vertices_sentence { $$ = $1; }
     | fetch_edges_sentence { $$ = $1; }
     ;
+
+scan_part_clause
+    : KW_PART expression { $$ = $2; }
+    ;
+ 
+scan_from_clause
+    : %empty { $$ = nullptr; }
+    | KW_FROM expression { $$ = $2; }
+    ;
+ 
+scan_limit_clause
+    : %empty { $$ = nullptr; }
+    | KW_LIMIT expression { $$ = $2; }
+    ;
+ 
+scan_sentence
+    : KW_SCAN KW_VERTEX name_label scan_part_clause scan_from_clause scan_limit_clause {
+        $$ = new ScanSentence($3, $4, $5, $6);
+    }
+    ;
+ 
 
 find_path_sentence
     : KW_FIND KW_ALL KW_PATH from_clause to_clause over_clause find_path_upto_clause
@@ -1300,17 +1374,54 @@ rebuild_edge_index_sentence
     }
     ;
 
+rebuild_sample_sentence
+    : KW_REBUILD KW_SAMPLE KW_ALL {
+        $$ = new RebuildSampleSentence(false);
+    }
+    | KW_REBUILD KW_SAMPLE KW_ALL KW_FORCE {
+        $$ = new RebuildSampleSentence(true);
+    }
+    | KW_REBUILD KW_SAMPLE KW_ALL KW_TAG {
+        $$ = new RebuildSampleSentence(nullptr, true, false);
+    }
+    | KW_REBUILD KW_SAMPLE KW_ALL KW_TAG KW_FORCE {
+        $$ = new RebuildSampleSentence(nullptr, true, true);
+    }
+    | KW_REBUILD KW_SAMPLE KW_ALL KW_EDGE {
+        $$ = new RebuildSampleSentence(nullptr, false, false);
+    }
+    | KW_REBUILD KW_SAMPLE KW_ALL KW_EDGE KW_FORCE {
+        $$ = new RebuildSampleSentence(nullptr, false, true);
+    }
+    | KW_REBUILD KW_SAMPLE KW_TAG sample_labels {
+        $$ = new RebuildSampleSentence($4, true, false);
+    }
+    | KW_REBUILD KW_SAMPLE KW_TAG sample_labels KW_FORCE {
+        $$ = new RebuildSampleSentence($4, true, true);
+    }
+    | KW_REBUILD KW_SAMPLE KW_EDGE sample_labels {
+        $$ = new RebuildSampleSentence($4, false, false);
+    }
+    | KW_REBUILD KW_SAMPLE KW_EDGE sample_labels KW_FORCE {
+        $$ = new RebuildSampleSentence($4, false, true);
+    }
+    ;
+
 traverse_sentence
     : L_PAREN set_sentence R_PAREN { $$ = $2; }
     | go_sentence { $$ = $1; }
     | match_sentence { $$ = $1; }
     | lookup_sentence { $$ = $1; }
+    | scan_sentence { $$ = $1; }
     | group_by_sentence { $$ = $1; }
     | order_by_sentence { $$ = $1; }
     | fetch_sentence { $$ = $1; }
     | find_path_sentence { $$ = $1; }
     | limit_sentence { $$ = $1; }
     | yield_sentence { $$ = $1; }
+    | sample_nb_sentence { $$ = $1; }
+    | sample_sentence { $$ =$1; }
+    | random_walk_sentence { $$ = $1; }
     ;
 
 piped_sentence
@@ -1732,6 +1843,12 @@ show_sentence
     | KW_SHOW KW_COLLATION {
         $$ = new ShowSentence(ShowSentence::ShowType::kShowCollation);
     }
+    | KW_SHOW KW_SAMPLE KW_STATUS {
+        $$ = new ShowSentence(ShowSentence::ShowType::kShowSampleStatus);
+    }
+    | KW_SHOW KW_SAMPLE KW_STATUS KW_STATUS {
+        $$ = new ShowSentence(ShowSentence::ShowType::kShowSampleStatus, new std::string("d"));
+    }
     ;
 
 config_module_enum
@@ -2020,6 +2137,7 @@ maintain_sentence
     | describe_edge_index_sentence { $$ = $1; }
     | rebuild_tag_index_sentence { $$ = $1; }
     | rebuild_edge_index_sentence { $$ = $1; }
+    | rebuild_sample_sentence { $$ = $1; }
     | show_sentence { $$ = $1; }
     ;
     | create_user_sentence { $$ = $1; }

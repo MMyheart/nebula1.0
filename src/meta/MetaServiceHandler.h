@@ -142,6 +142,12 @@ public:
     folly::Future<cpp2::ListIndexStatusResp>
     future_listEdgeIndexStatus(const cpp2::ListIndexStatusReq& req) override;
 
+    folly::Future<::nebula::meta::cpp2::ExecResp> future_rebuildSample(
+        const ::nebula::meta::cpp2::RebuildSampleReq& req) override;
+
+    folly::Future<::nebula::meta::cpp2::ListSampleStatusResp> future_listSampleStatus(
+        const ::nebula::meta::cpp2::ListSampleStatusReq& req) override;
+
     /**
      * User manager
      **/

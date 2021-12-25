@@ -74,6 +74,8 @@ nebula_add_library(
     processors/jobMan/JobStatus.cpp
     processors/jobMan/AdminJobProcessor.cpp
     processors/jobMan/JobUtils.cpp
+    processors/sampleMan/RebuildSampleProcessor.cpp
+    processors/sampleMan/ListSampleStatusProcessor.cpp
 )
 
 nebula_add_library(

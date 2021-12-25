@@ -461,9 +461,8 @@ public:
             sc->indexMan_->init(mClient);
         }
 
-
         auto handler = std::make_shared<nebula::storage::StorageServiceHandler>(
-            sc->kvStore_.get(), sc->schemaMan_.get(), sc->indexMan_.get(), mClient);
+            sc->kvStore_.get(), nullptr, sc->schemaMan_.get(), sc->indexMan_.get(), mClient);
         sc->mockCommon("storage", port, handler);
         auto ptr = dynamic_cast<kvstore::MetaServerBasedPartManager*>(
             sc->kvStore_->partManager());

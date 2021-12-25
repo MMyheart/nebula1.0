@@ -7,6 +7,7 @@ nebula_add_library(
     RocksEngineConfig.cpp
     LogEncoder.cpp
     SnapshotManagerImpl.cpp
+    StatisticStore.cpp
 )
 
 nebula_add_subdirectory(raftex)

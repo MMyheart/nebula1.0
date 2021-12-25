@@ -1,4 +1,4 @@
-/* Copyright (c) 2019 vesoft inc. All rights reserved.
+/* Copyright (c) 2021 vesoft inc. All rights reserved.
  *
  * This source code is licensed under Apache 2.0 License,
  * attached with Common Clause Condition 1.0, found in the LICENSES directory.
@@ -14,7 +14,7 @@
 #include "meta/NebulaSchemaProvider.h"
 #include "storage/StorageFlags.h"
 
-DEFINE_int32(max_scan_block_size, 4 * 1024 * 1024, "Max size of a respsonse block");
+DEFINE_int64(max_scan_block_size, 4 * 1024 * 1024, "Max size of a respsonse block");
 
 namespace nebula {
 namespace storage {

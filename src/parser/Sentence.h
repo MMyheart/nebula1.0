@@ -72,6 +72,12 @@ public:
         kCreateSnapshot,
         kDropSnapshot,
         kAdmin,
+        kSampleVertex,
+        kSampleEdge,
+        kScan,
+        KSampleNB,
+        KRandomWalk,
+        KRebuildSample,
     };
 
     Kind kind() const {

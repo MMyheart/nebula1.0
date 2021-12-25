@@ -4,8 +4,9 @@
  * attached with Common Clause Condition 1.0, found in the LICENSES directory.
  */
 
-#include "base/Base.h"
 #include "storage/client/StorageClient.h"
+#include "base/Base.h"
+#include "rand/random.h"
 
 DEFINE_int32(storage_client_timeout_ms, 60 * 1000, "storage client timeout");
 
@@ -545,6 +546,185 @@ StorageClient::lookUpIndex(GraphSpaceID space,
                            [](const PartitionID& part) {
                                return part;
                            });
+}
+
+folly::SemiFuture<StatusOr<storage::cpp2::ScanVertexResponse>> StorageClient::ScanVertex(
+    GraphSpaceID space,
+    PartitionID partId,
+    std::string cursor,
+    std::unordered_map<TagID, std::vector<storage::cpp2::PropDef>> return_columns,
+    bool all_columns,
+    int32_t limit,
+    int64_t start_time,
+    int64_t end_time,
+    folly::EventBase* evb) {
+    std::pair<HostAddr, cpp2::ScanVertexRequest> request;
+    auto metaStatus = getPartMeta(space, partId);
+    if (!metaStatus.ok()) {
+        return folly::makeFuture<StatusOr<storage::cpp2::ScanVertexResponse>>(metaStatus.status());
+    }
+    auto partMeta = metaStatus.value();
+    CHECK_GT(partMeta.peers_.size(), 0U);
+    const auto& host = this->leader(partMeta);
+    VLOG(1) << "ScanVertex partId " << partId << " @" << host;
+    request.first = std::move(host);
+    cpp2::ScanVertexRequest req;
+    req.set_space_id(space);
+    req.set_part_id(partId);
+    req.set_cursor(std::move(cursor));
+    req.set_return_columns(std::move(return_columns));
+    req.set_all_columns(all_columns);
+    req.set_limit(limit);
+    req.set_start_time(start_time);
+    req.set_end_time(end_time);
+    request.second = std::move(req);
+
+    return getResponse(
+        evb,
+        std::move(request),
+        [](cpp2::StorageServiceAsyncClient* client, const cpp2::ScanVertexRequest& r) {
+            return client->future_scanVertex(r);
+        });
+}
+
+folly::SemiFuture<StorageRpcResponse<storage::cpp2::SampleVertexResp>> StorageClient::sampleVertex(
+    GraphSpaceID space,
+    const std::vector<TagID>& tagIds,
+    const int32_t count,
+    folly::EventBase* evb) {
+    auto status = getHostParts(space);
+    if (!status.ok()) {
+        return folly::makeFuture<StorageRpcResponse<storage::cpp2::SampleVertexResp>>(
+            std::runtime_error(status.status().toString()));
+    }
+    auto& clusters = status.value();
+    auto s = client_->getTagIdHostWeights(space);
+    if (!s.ok()) {
+        return folly::makeFuture<StorageRpcResponse<storage::cpp2::SampleVertexResp>>(
+            std::runtime_error(s.status().toString()));
+    }
+    auto& tagIdHostWeights = s.value();
+
+    std::unordered_map<std::string, int32_t> split_cnt;
+    int32_t remain_cnt = count;
+    std::vector<std::string> no_zero_idxs;
+
+    for (auto& c : clusters) {
+        float sum_weight0 = 0, sum_weight1 = 0;
+        std::string host;
+        host.append(std::to_string(c.first.first))
+            .append(",")
+            .append(std::to_string(c.first.second));
+        for (TagID tagId : tagIds) {
+            sum_weight0 += tagIdHostWeights[tagId][host];
+            sum_weight1 += tagIdHostWeights[tagId]["0,0"];
+        }
+        if (fabs(sum_weight1 - 0.0) < 0.0000001) {
+            LOG(FATAL) << "node type sum weight is zero!";
+        }
+        split_cnt[host] = floor(count * sum_weight0 / sum_weight1);
+        if (sum_weight0 > 0) {
+            no_zero_idxs.push_back(host);
+        }
+        remain_cnt -= split_cnt[host];
+    }
+    for (size_t i = 0; remain_cnt > 0; ++i, --remain_cnt) {
+        std::string no_zero_idx =
+            no_zero_idxs[floor(nebula::ThreadLocalRandom() * no_zero_idxs.size())];
+        split_cnt[no_zero_idx] += 1;
+    }
+
+    std::unordered_map<HostAddr, cpp2::SampleVertexRequest> requests;
+    for (auto& c : clusters) {
+        auto& host = c.first;
+        std::string str;
+        str.append(std::to_string(c.first.first))
+            .append(",")
+            .append(std::to_string(c.first.second));
+        auto& req = requests[host];
+        req.set_space_id(space);
+        req.set_tag_ids(tagIds);
+        req.set_count(split_cnt[str]);
+        std::vector<PartitionID> parts;
+        req.set_parts(parts);
+    }
+    return collectResponse(
+        evb,
+        std::move(requests),
+        [](cpp2::StorageServiceAsyncClient* client, const cpp2::SampleVertexRequest& r) {
+            return client->future_sampleVertex(r);
+        },
+        [](const PartitionID& part) { return part; });
+}
+
+folly::SemiFuture<StorageRpcResponse<storage::cpp2::SampleEdgeResp>> StorageClient::sampleEdge(
+    GraphSpaceID space,
+    const std::vector<EdgeType>& edgeTypes,
+    const int32_t count,
+    folly::EventBase* evb) {
+    auto status = getHostParts(space);
+    if (!status.ok()) {
+        return folly::makeFuture<StorageRpcResponse<storage::cpp2::SampleEdgeResp>>(
+            std::runtime_error(status.status().toString()));
+    }
+    auto& clusters = status.value();
+    auto s = client_->getEdgeTypeHostWeights(space);
+    if (!s.ok()) {
+        return folly::makeFuture<StorageRpcResponse<storage::cpp2::SampleEdgeResp>>(
+            std::runtime_error(s.status().toString()));
+    }
+    auto& edgeTypeHostWeights = s.value();
+
+    std::unordered_map<std::string, int32_t> split_cnt;
+    int32_t remain_cnt = count;
+    std::vector<std::string> no_zero_idxs;
+
+    for (auto& c : clusters) {
+        float sum_weight0 = 0, sum_weight1 = 0;
+        std::string host;
+        host.append(std::to_string(c.first.first))
+            .append(",")
+            .append(std::to_string(c.first.second));
+        for (EdgeType edgeType : edgeTypes) {
+            sum_weight0 += edgeTypeHostWeights[edgeType][host];
+            sum_weight1 += edgeTypeHostWeights[edgeType]["0,0"];
+        }
+        if (fabs(sum_weight1 - 0.0) < 0.0000001) {
+            LOG(FATAL) << "edgeType sum weight is zero!";
+        }
+        split_cnt[host] = floor(count * sum_weight0 / sum_weight1);
+        if (sum_weight0 > 0) {
+            no_zero_idxs.push_back(host);
+        }
+        remain_cnt -= split_cnt[host];
+    }
+    for (size_t i = 0; remain_cnt > 0; ++i, --remain_cnt) {
+        std::string no_zero_idx =
+            no_zero_idxs[floor(nebula::ThreadLocalRandom() * no_zero_idxs.size())];
+        split_cnt[no_zero_idx] += 1;
+    }
+
+    std::unordered_map<HostAddr, cpp2::SampleEdgeRequest> requests;
+    for (auto& c : clusters) {
+        auto& host = c.first;
+        std::string str;
+        str.append(std::to_string(c.first.first))
+            .append(",")
+            .append(std::to_string(c.first.second));
+        auto& req = requests[host];
+        req.set_space_id(space);
+        std::vector<PartitionID> parts;
+        req.set_parts(parts);
+        req.set_count(split_cnt[str]);
+        req.set_edge_types(edgeTypes);
+    }
+    return collectResponse(
+        evb,
+        std::move(requests),
+        [](cpp2::StorageServiceAsyncClient* client, const cpp2::SampleEdgeRequest& r) {
+            return client->future_sampleEdge(r);
+        },
+        [](const PartitionID& part) { return part; });
 }
 
 }   // namespace storage

@@ -15,6 +15,7 @@
 #include "meta/client/MetaClient.h"
 #include "meta/ClientBasedGflagsManager.h"
 #include "hdfs/HdfsHelper.h"
+#include "kvstore/StatisticStore.h"
 
 namespace nebula {
 
@@ -44,6 +45,8 @@ public:
 private:
     std::unique_ptr<kvstore::KVStore> getStoreInstance();
 
+    std::unique_ptr<kvstore::StatisticStore> getStatisticStoreInstance();
+
     bool initWebService();
 
     std::string statusStr(Status status) {
@@ -66,6 +69,7 @@ private:
     std::unique_ptr<nebula::WebService> webSvc_;
     std::unique_ptr<meta::MetaClient> metaClient_;
     std::unique_ptr<kvstore::KVStore> kvstore_;
+    std::unique_ptr<kvstore::StatisticStore> statisticStore_;
 
     std::unique_ptr<nebula::hdfs::HdfsHelper> hdfsHelper_;
     std::unique_ptr<nebula::thread::GenericThreadPool> webWorkers_;

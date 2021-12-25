@@ -426,6 +426,27 @@ public:
 private:
     std::unique_ptr<YieldColumns>               groupColumns_;
 };
+
+class SampleLabels final {
+public:
+    void addLabel(std::string *label) {
+        labels_.emplace_back(label);
+    }
+
+    std::vector<std::string *> labels() {
+        std::vector<std::string *> result;
+        std::transform(labels_.cbegin(),
+                       labels_.cend(),
+                       std::insert_iterator<std::vector<std::string *>>(result, result.begin()),
+                       [](auto &label) { return label.get(); });
+        return result;
+    }
+
+    std::string toString() const;
+
+private:
+    std::vector<std::unique_ptr<std::string>> labels_;
+};
 }   // namespace nebula
 #endif  // PARSER_CLAUSES_H_
 

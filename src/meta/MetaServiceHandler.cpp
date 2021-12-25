@@ -53,6 +53,8 @@
 #include "meta/processors/configMan/SetConfigProcessor.h"
 #include "meta/processors/configMan/ListConfigsProcessor.h"
 #include "meta/processors/jobMan/AdminJobProcessor.h"
+#include "meta/processors/sampleMan/RebuildSampleProcessor.h"
+#include "meta/processors/sampleMan/ListSampleStatusProcessor.h"
 
 #define RETURN_FUTURE(processor) \
     auto f = processor->getFuture(); \
@@ -275,6 +277,18 @@ MetaServiceHandler::future_rebuildEdgeIndex(const cpp2::RebuildIndexReq& req) {
 folly::Future<cpp2::ListIndexStatusResp>
 MetaServiceHandler::future_listEdgeIndexStatus(const cpp2::ListIndexStatusReq& req) {
     auto* processor = ListEdgeIndexStatusProcessor::instance(kvstore_);
+    RETURN_FUTURE(processor);
+}
+
+folly::Future< ::nebula::meta::cpp2::ExecResp>
+MetaServiceHandler::future_rebuildSample(const ::nebula::meta::cpp2::RebuildSampleReq &req) {
+    auto* processor = RebuildSampleProcessor::instance(kvstore_, adminClient_.get());
+    RETURN_FUTURE(processor);
+}
+
+folly::Future< ::nebula::meta::cpp2::ListSampleStatusResp>
+MetaServiceHandler::future_listSampleStatus(const ::nebula::meta::cpp2::ListSampleStatusReq &req) {
+    auto* processor = ListSampleStatusProcessor::instance(kvstore_);
     RETURN_FUTURE(processor);
 }
 

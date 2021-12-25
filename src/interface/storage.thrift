@@ -445,6 +445,26 @@ struct RebuildIndexRequest {
     4: bool                         is_offline,
 }
 
+struct RebuildSampleRequest {
+    1: common.GraphSpaceID          space_id,
+    2: list<common.PartitionID>     parts,
+    3: list<common.TagID>           tagIds,
+    4: list<common.EdgeType>        edgeTypes,
+    5: common.HostAddr              host,
+}
+ 
+struct RebuildSampleWeights {
+    1: optional common.TagID      tagId,
+    2: optional common.EdgeType   edgeType,
+    3: double                     weights,
+}
+ 
+struct RebuildSampleResponse {
+    1: required ResponseCommon              result,
+    2: optional list<RebuildSampleWeights>  weights,
+    3: optional common.HostAddr             host,
+}
+ 
 struct LookUpIndexRequest {
     1: common.GraphSpaceID       space_id,
     2: list<common.PartitionID>  parts,
@@ -461,6 +481,43 @@ struct LookUpIndexResp {
     4: optional list<Edge>                 edges,
 }
 
+struct SampleVertexRequest {
+    1: common.GraphSpaceID       space_id,
+    2: list<common.TagID>        tag_ids,
+    3: i32                       count,
+    4: list<common.PartitionID>  parts,
+}
+ 
+struct VertexWeight {
+    1: common.TagID tagId,
+    2: common.VertexID vid,
+    3: double weight,
+}
+ 
+struct SampleVertexResp {
+    1: required ResponseCommon   result,
+    2: list<VertexWeight>        vertexWeights,
+}
+ 
+struct SampleEdgeRequest {
+    1: common.GraphSpaceID       space_id,
+    2: list<common.PartitionID>  parts,
+    3: list<common.EdgeType>     edge_types,
+    4: i32                       count,
+}
+ 
+struct EdgeWeight {
+    1: common.EdgeType edgeType,
+    2: common.VertexID srcVid,
+    3: common.VertexID dstVid,
+    4: double weight,
+}
+ 
+struct SampleEdgeResp {
+    1: required ResponseCommon    result,
+    2: list<EdgeWeight>           edgeWeights,
+}
+ 
 service StorageService {
     QueryResponse getBound(1: GetNeighborsRequest req)
 
@@ -501,6 +558,9 @@ service StorageService {
     AdminExecResp rebuildTagIndex(1: RebuildIndexRequest req);
     AdminExecResp rebuildEdgeIndex(1: RebuildIndexRequest req);
 
+    // Interfaces for rebuild sample
+    RebuildSampleResponse rebuildSample(1: RebuildSampleRequest req);
+ 
     // Interfaces for key-value storage
     ExecResponse      put(1: PutRequest req);
     GeneralResponse   get(1: GetRequest req);
@@ -511,4 +571,7 @@ service StorageService {
 
     // Interfaces for edge and vertex index scan
     LookUpIndexResp   lookUpIndex(1: LookUpIndexRequest req);
+     
+    SampleVertexResp sampleVertex(1: SampleVertexRequest req);
+    SampleEdgeResp sampleEdge(1: SampleEdgeRequest req);
 }

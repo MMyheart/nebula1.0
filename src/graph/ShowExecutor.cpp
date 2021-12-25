@@ -27,7 +27,8 @@ void ShowExecutor::execute() {
         sentence_->showType() == ShowSentence::ShowType::kShowTags ||
         sentence_->showType() == ShowSentence::ShowType::kShowEdges ||
         sentence_->showType() == ShowSentence::ShowType::kShowCreateTag ||
-        sentence_->showType() == ShowSentence::ShowType::kShowCreateEdge) {
+        sentence_->showType() == ShowSentence::ShowType::kShowCreateEdge ||
+        sentence_->showType() == ShowSentence::ShowType::kShowSampleStatus) {
         auto status = checkIfGraphSpaceChosen();
         if (!status.ok()) {
             doError(std::move(status));
@@ -92,6 +93,9 @@ void ShowExecutor::execute() {
             break;
         case ShowSentence::ShowType::kShowCollation:
             showCollation();
+            break;
+        case ShowSentence::ShowType::kShowSampleStatus:
+            showSampleStatus();
             break;
         case ShowSentence::ShowType::kUnknown:
             doError(Status::Error("Type unknown"));
@@ -1183,6 +1187,91 @@ void ShowExecutor::showRoles() {
         doError(Status::Error(folly::stringPrintf("Show roles exception: %s",
                                                   e.what().c_str())));
         return;
+    };
+    std::move(future).via(runner).thenValue(cb).thenError(error);
+}
+
+void ShowExecutor::showSampleStatus() {
+    auto name = sentence_->getName();
+    bool show = name == nullptr || *name != "d";
+    auto spaceId = ectx()->rctx()->session()->space();
+    auto future = ectx()->getMetaClient()->listSampleStatus(spaceId, !show);
+    auto *runner = ectx()->rctx()->runner();
+
+    auto cb = [this, spaceId](auto &&resp) {
+        if (!resp.ok()) {
+            doError(std::move(resp).status());
+            return;
+        }
+
+        resp_ = std::make_unique<cpp2::ExecutionResponse>();
+        std::vector<std::string> header{"Type", "Name", "Sample Status", "Weights"};
+        resp_->set_column_names(std::move(header));
+
+        std::vector<cpp2::RowValue> rows;
+        meta::cpp2::ListSampleStatusResp resp1 = std::move(resp).value();
+        if (!resp1.__isset.statuses) {
+            resp_->set_rows(std::move(rows));
+            doFinish(Executor::ProcessControl::kNext);
+            return;
+        }
+        auto status = resp1.get_statuses();
+        std::unordered_map<TagID, std::vector<meta::cpp2::SampleWeights>> *tagIdWeights;
+        if (resp1.__isset.tagIdWeights) {
+            tagIdWeights = resp1.get_tagIdWeights();
+        }
+        std::unordered_map<EdgeType, std::vector<meta::cpp2::SampleWeights>> *edgeTypeWeights;
+        if (resp1.__isset.edgeTypeWeights) {
+            edgeTypeWeights = resp1.get_edgeTypeWeights();
+        }
+        for (auto it = status->begin(); it != status->end(); it++) {
+            std::vector<cpp2::ColumnValue> row;
+            row.resize(resp_->get_column_names()->size());
+            if (it->__isset.tagId) {
+                auto nameStatus = ectx()->schemaManager()->toTagName(spaceId, *it->get_tagId());
+                if (!nameStatus.ok()) {
+                    doError(nameStatus.status());
+                    return;
+                }
+                auto tagName = nameStatus.value();
+                row[0].set_str("TAG");
+                row[1].set_str(std::move(tagName));
+                auto weights = (*tagIdWeights)[*it->get_tagId()];
+                for (auto weight : weights) {
+                    if (weight.get_hostStr() == "0,0") {
+                        row[3].set_str(std::to_string(weight.get_weight()));
+                        break;
+                    }
+                }
+            } else {
+                auto nStatus = ectx()->schemaManager()->toEdgeName(spaceId, *it->get_edgeType());
+                if (!nStatus.ok()) {
+                    doError(nStatus.status());
+                    return;
+                }
+                auto edgeName = nStatus.value();
+                row[0].set_str("EDGE");
+                row[1].set_str(std::move(edgeName));
+                auto weights = (*edgeTypeWeights)[*it->get_edgeType()];
+                for (auto weight : weights) {
+                    if (weight.get_hostStr() == "0,0") {
+                        row[3].set_str(std::to_string(weight.get_weight()));
+                        break;
+                    }
+                }
+            }
+            row[2].set_str(std::move(it->get_status()));
+            rows.emplace_back();
+            rows.back().set_columns(std::move(row));
+        }
+        resp_->set_rows(std::move(rows));
+        doFinish(Executor::ProcessControl::kNext);
+    };
+
+    auto error = [this](auto &&e) {
+        LOG(ERROR) << "Exception caught: " << e.what();
+        doError(Status::Error(
+            folly::stringPrintf("Show sample status exception : %s", e.what().c_str())));
     };
     std::move(future).via(runner).thenValue(cb).thenError(error);
 }

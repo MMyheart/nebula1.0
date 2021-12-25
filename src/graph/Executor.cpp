@@ -61,6 +61,11 @@
 #include "graph/DropSnapshotExecutor.h"
 #include "graph/UserExecutor.h"
 #include "graph/PrivilegeExecutor.h"
+#include "graph/RandomWalkExecutor.h"
+#include "graph/RebuildSampleExecutor.h"
+#include "graph/SampleExecutor.h"
+#include "graph/SampleNBExecutor.h"
+#include "graph/ScanExecutor.h"
 
 namespace nebula {
 namespace graph {
@@ -71,6 +76,9 @@ std::unique_ptr<Executor> Executor::makeExecutor(Sentence *sentence) {
     switch (kind) {
         case Sentence::Kind::kGo:
             executor = std::make_unique<GoExecutor>(sentence, ectx());
+            break;
+        case Sentence::Kind::kScan:
+            executor = std::make_unique<ScanExecutor>(sentence, ectx());
             break;
         case Sentence::Kind::kUse:
             executor = std::make_unique<UseExecutor>(sentence, ectx());
@@ -230,6 +238,21 @@ std::unique_ptr<Executor> Executor::makeExecutor(Sentence *sentence) {
             break;
         case Sentence::Kind::kRevoke:
             executor = std::make_unique<RevokeExecutor>(sentence, ectx());
+            break;
+        case Sentence::Kind::kSampleVertex:
+            executor = std::make_unique<SampleVertexExecutor>(sentence, ectx());
+            break;
+        case Sentence::Kind::kSampleEdge:
+            executor = std::make_unique<SampleEdgeExecutor>(sentence, ectx());
+            break;
+        case Sentence::Kind::KSampleNB:
+            executor = std::make_unique<SampleNBExecutor>(sentence, ectx());
+            break;
+        case Sentence::Kind::KRandomWalk:
+            executor = std::make_unique<RandomWalkExecutor>(sentence, ectx());
+            break;
+        case Sentence::Kind::KRebuildSample:
+            executor = std::make_unique<RebuildSampleExecutor>(sentence, ectx());
             break;
         case Sentence::Kind::kUnknown:
             LOG(ERROR) << "Sentence kind unknown";

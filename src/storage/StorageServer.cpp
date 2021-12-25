@@ -66,6 +66,15 @@ std::unique_ptr<kvstore::KVStore> StorageServer::getStoreInstance() {
     return nullptr;
 }
 
+std::unique_ptr<kvstore::StatisticStore> StorageServer::getStatisticStoreInstance() {
+    auto statisticStore = std::make_unique<kvstore::StatisticStore>(dataPaths_[0]);
+    if (!(statisticStore->init())) {
+        LOG(ERROR) << "StatisticStore store init failed";
+        return nullptr;
+    }
+    return statisticStore;
+}
+
 bool StorageServer::initWebService() {
     LOG(INFO) << "Starting Storage HTTP Service";
     hdfsHelper_ = std::make_unique<hdfs::HdfsCommandHelper>();
@@ -130,6 +139,9 @@ bool StorageServer::start() {
     LOG(INFO) << "Init kvstore";
     kvstore_ = getStoreInstance();
 
+    LOG(INFO) << "Init statisticStore";
+    statisticStore_ = getStatisticStoreInstance();
+
     if (nullptr == kvstore_) {
         LOG(ERROR) << "Init kvstore failed";
         return false;
@@ -141,6 +153,7 @@ bool StorageServer::start() {
     }
 
     auto handler = std::make_shared<StorageServiceHandler>(kvstore_.get(),
+                                                           statisticStore_.get(),
                                                            schemaMan_.get(),
                                                            indexMan_.get(),
                                                            metaClient_.get());
@@ -176,6 +189,10 @@ void StorageServer::stop() {
 
     if (kvstore_) {
         kvstore_->stop();
+    }
+
+    if (statisticStore_) {
+        statisticStore_->stop();
     }
 
     webSvc_.reset();

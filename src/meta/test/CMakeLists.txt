@@ -95,6 +95,8 @@ nebula_add_test(
         $<TARGET_OBJECTS:storage_client>
         $<TARGET_OBJECTS:meta_gflags_man_obj>
         $<TARGET_OBJECTS:storage_service_handler>
+        $<TARGET_OBJECTS:rand_obj>
+        $<TARGET_OBJECTS:alias_sample>
         $<TARGET_OBJECTS:adHocSchema_obj>
         $<TARGET_OBJECTS:adHocIndex_obj>
         $<TARGET_OBJECTS:dataman_obj>
@@ -189,6 +191,8 @@ nebula_add_test(
     OBJECTS
         $<TARGET_OBJECTS:index_obj>
         $<TARGET_OBJECTS:storage_service_handler>
+        $<TARGET_OBJECTS:rand_obj>
+        $<TARGET_OBJECTS:alias_sample>
         $<TARGET_OBJECTS:storage_client>
         $<TARGET_OBJECTS:dataman_obj>
         $<TARGET_OBJECTS:filter_obj>

@@ -24,6 +24,9 @@
 #include "graph/YieldExecutor.h"
 #include "graph/GroupByExecutor.h"
 #include "graph/SchemaHelper.h"
+#include "graph/SampleExecutor.h"
+#include "graph/SampleNBExecutor.h"
+#include "graph/ScanExecutor.h"
 
 namespace nebula {
 namespace graph {
@@ -41,6 +44,9 @@ TraverseExecutor::makeTraverseExecutor(Sentence *sentence, ExecutionContext *ect
     switch (kind) {
         case Sentence::Kind::kGo:
             executor = std::make_unique<GoExecutor>(sentence, ectx);
+            break;
+        case Sentence::Kind::kScan:
+            executor = std::make_unique<ScanExecutor>(sentence, ectx);
             break;
         case Sentence::Kind::kPipe:
             executor = std::make_unique<PipeExecutor>(sentence, ectx);
@@ -74,6 +80,15 @@ TraverseExecutor::makeTraverseExecutor(Sentence *sentence, ExecutionContext *ect
             break;
         case Sentence::Kind::KGroupBy:
             executor = std::make_unique<GroupByExecutor>(sentence, ectx);
+            break;
+        case Sentence::Kind::KSampleNB:
+            executor = std::make_unique<SampleNBExecutor>(sentence, ectx);
+            break;
+        case Sentence::Kind::kSampleVertex:
+            executor = std::make_unique<SampleVertexExecutor>(sentence, ectx);
+            break;
+        case Sentence::Kind::kSampleEdge:
+            executor = std::make_unique<SampleEdgeExecutor>(sentence, ectx);
             break;
         case Sentence::Kind::kUnknown:
             LOG(FATAL) << "Sentence kind unknown";

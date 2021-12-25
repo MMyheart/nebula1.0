@@ -95,6 +95,11 @@ using UserRolesMap = std::unordered_map<std::string, std::vector<nebula::cpp2::R
 // get user password by account
 using UserPasswordMap = std::unordered_map<std::string, std::string>;
 
+// get tagId host weights
+using TagIdHostWeights = std::unordered_map<TagID, std::unordered_map<std::string, double>>;
+// get edgeType host weights
+using EdgeTypeHostWeights = std::unordered_map<EdgeType, std::unordered_map<std::string, double>>;
+
 struct ConfigItem {
     ConfigItem() {}
 
@@ -302,6 +307,13 @@ public:
     folly::Future<StatusOr<std::vector<cpp2::IndexStatus>>>
     listTagIndexStatus(GraphSpaceID spaceId);
 
+    folly::Future<StatusOr<bool>> rebuildSample(GraphSpaceID spaceID,
+                                                std::vector<TagID> tagIds,
+                                                std::vector<EdgeType> edgeTypes,
+                                                bool force);
+
+    folly::Future<StatusOr<cpp2::ListSampleStatusResp>> listSampleStatus(GraphSpaceID spaceId,
+                                                                         bool remove);
     folly::Future<StatusOr<IndexID>>
     createEdgeIndex(GraphSpaceID spaceID,
                     std::string indexName,
@@ -498,6 +510,12 @@ public:
 
     StatusOr<LeaderMap> loadLeader();
 
+    StatusOr<std::unordered_map<TagID, std::unordered_map<std::string, double>>>
+    getTagIdHostWeights(GraphSpaceID spaceId);
+
+    StatusOr<std::unordered_map<EdgeType, std::unordered_map<std::string, double>>>
+    getEdgeTypeHostWeights(GraphSpaceID spaceId);
+
 protected:
     // Return true if load succeeded.
     bool loadData();
@@ -625,6 +643,13 @@ private:
 
     NameIndexMap          tagNameIndexMap_;
     NameIndexMap          edgeNameIndexMap_;
+
+    std::unordered_map<GraphSpaceID,
+                       std::unordered_map<EdgeType, std::unordered_map<std::string, double>>>
+        edgeTypeHostWeights_;
+    std::unordered_map<GraphSpaceID,
+                       std::unordered_map<TagID, std::unordered_map<std::string, double>>>
+        tagIdHostWeights_;
 
     folly::RWSpinLock     localCacheLock_;
     MetaChangedListener*  listener_{nullptr};

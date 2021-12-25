@@ -6,6 +6,8 @@ nebula_add_executable(
     OBJECTS
         $<TARGET_OBJECTS:storage_client>
         $<TARGET_OBJECTS:storage_service_handler>
+        $<TARGET_OBJECTS:rand_obj>
+        $<TARGET_OBJECTS:alias_sample>
         $<TARGET_OBJECTS:storage_thrift_obj>
         $<TARGET_OBJECTS:kvstore_obj>
         $<TARGET_OBJECTS:meta_client>
@@ -52,6 +54,8 @@ nebula_add_executable(
     OBJECTS
         $<TARGET_OBJECTS:storage_client>
         $<TARGET_OBJECTS:storage_service_handler>
+        $<TARGET_OBJECTS:rand_obj>
+        $<TARGET_OBJECTS:alias_sample>
         $<TARGET_OBJECTS:storage_thrift_obj>
         $<TARGET_OBJECTS:kvstore_obj>
         $<TARGET_OBJECTS:meta_client>

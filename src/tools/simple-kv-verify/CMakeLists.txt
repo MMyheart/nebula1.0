@@ -6,6 +6,8 @@ nebula_add_executable(
     OBJECTS
         $<TARGET_OBJECTS:storage_client>
         $<TARGET_OBJECTS:storage_service_handler>
+        $<TARGET_OBJECTS:rand_obj>
+        $<TARGET_OBJECTS:alias_sample>
         $<TARGET_OBJECTS:meta_client>
         $<TARGET_OBJECTS:gflags_man_obj>
         $<TARGET_OBJECTS:wal_obj>

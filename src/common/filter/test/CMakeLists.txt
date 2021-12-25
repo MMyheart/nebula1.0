@@ -1,6 +1,7 @@
 set(FILTER_TEST_LIBS
     $<TARGET_OBJECTS:filter_obj>
     $<TARGET_OBJECTS:storage_client>
+    $<TARGET_OBJECTS:rand_obj>
     $<TARGET_OBJECTS:meta_client>
     $<TARGET_OBJECTS:stats_obj>
     $<TARGET_OBJECTS:time_obj>

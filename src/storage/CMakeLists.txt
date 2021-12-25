@@ -10,6 +10,8 @@ nebula_add_library(
     query/QueryStatsProcessor.cpp
     query/ScanEdgeProcessor.cpp
     query/ScanVertexProcessor.cpp
+    query/SampleVertexProcessor.cpp
+    query/SampleEdgeProcessor.cpp
     mutate/AddVerticesProcessor.cpp
     mutate/AddEdgesProcessor.cpp
     mutate/DeleteEdgesProcessor.cpp
@@ -26,6 +28,7 @@ nebula_add_library(
     index/IndexPolicyMaker.cpp
     index/IndexExecutor.cpp
     index/LookUpIndexProcessor.cpp
+    admin/RebuildSampleProcessor.cpp
 )
 
 nebula_add_library(

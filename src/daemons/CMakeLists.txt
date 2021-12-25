@@ -37,6 +37,8 @@ nebula_add_executable(
         $<TARGET_OBJECTS:permission_obj>
         $<TARGET_OBJECTS:kvstore_storage_utils_obj>
         $<TARGET_OBJECTS:convert_time_type_utils_obj>
+        $<TARGET_OBJECTS:rand_obj>
+        $<TARGET_OBJECTS:alias_sample>
     LIBRARIES
         proxygenhttpserver
         proxygenlib
@@ -54,6 +56,8 @@ nebula_add_executable(
         $<TARGET_OBJECTS:filter_obj>
         $<TARGET_OBJECTS:storage_server>
         $<TARGET_OBJECTS:storage_service_handler>
+        $<TARGET_OBJECTS:rand_obj>
+        $<TARGET_OBJECTS:alias_sample>
         $<TARGET_OBJECTS:storage_http_handler>
         $<TARGET_OBJECTS:kvstore_obj>
         $<TARGET_OBJECTS:raftex_obj>
@@ -129,6 +133,7 @@ nebula_add_executable(
         $<TARGET_OBJECTS:base_obj>
         $<TARGET_OBJECTS:encryption_obj>
         $<TARGET_OBJECTS:kvstore_storage_utils_obj>
+        $<TARGET_OBJECTS:rand_obj>
     LIBRARIES
         proxygenhttpserver
         proxygenlib

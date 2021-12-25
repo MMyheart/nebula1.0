@@ -99,6 +99,9 @@ bool PermissionCheck::permissionCheck(session::Session *session, Sentence* sente
         case Sentence::Kind::kDescribeTagIndex :
         case Sentence::Kind::kDescribeEdgeIndex :
         case Sentence::Kind::kGo :
+        case Sentence::Kind::kScan :
+        case Sentence::Kind::KSampleNB :
+        case Sentence::Kind::KRandomWalk :
         case Sentence::Kind::kSet :
         case Sentence::Kind::kPipe :
         case Sentence::Kind::kMatch :
@@ -111,7 +114,9 @@ bool PermissionCheck::permissionCheck(session::Session *session, Sentence* sente
         case Sentence::Kind::kFindPath :
         case Sentence::Kind::kLimit :
         case Sentence::Kind::KGroupBy :
-        case Sentence::Kind::kReturn : {
+        case Sentence::Kind::kReturn :
+        case Sentence::Kind::kSampleEdge :
+        case Sentence::Kind::kSampleVertex : {
             return permission::PermissionManager::canReadSchemaOrData(session);
         }
         case Sentence::Kind::kShow : {
@@ -130,6 +135,9 @@ bool PermissionCheck::permissionCheck(session::Session *session, Sentence* sente
             return permission::PermissionManager::canShow(session, stc->showType());
         }
         case Sentence::Kind::kChangePassword : {
+            return true;
+        }
+        case Sentence::Kind::KRebuildSample: {
             return true;
         }
     }

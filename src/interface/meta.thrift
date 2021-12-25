@@ -687,6 +687,37 @@ struct ListIndexStatusResp {
     3: list<IndexStatus>    statuses,
 }
 
+struct RebuildSampleReq {
+    1: common.GraphSpaceID    space_id,
+    2: list<common.TagID>     tagIds,
+    3: list<common.EdgeType>  edgeTypes,
+    4: bool                   force,
+}
+ 
+struct ListSampleStatusReq {
+    1: common.GraphSpaceID    space_id,
+    2: bool                   remove,
+}
+ 
+struct SampleStatus {
+    1: optional common.TagID     tagId,
+    2: optional common.EdgeType  edgeType,
+    3: string                    status,
+}
+ 
+struct SampleWeights {
+    1: string                    hostStr,
+    2: double                    weight,
+}
+ 
+struct ListSampleStatusResp {
+    1: ErrorCode                     code,
+    2: optional list<SampleStatus>   statuses,
+    3: optional map<common.TagID, list<SampleWeights>> (cpp.template = "std::unordered_map") tagIdWeights,
+    4: optional map<common.EdgeType, list<SampleWeights>> (cpp.template = "std::unordered_map") edgeTypeWeights,
+    5: common.HostAddr               leader,
+}
+ 
 service MetaService {
     ExecResp createSpace(1: CreateSpaceReq req);
     ExecResp dropSpace(1: DropSpaceReq req);
@@ -729,6 +760,8 @@ service MetaService {
     ListEdgeIndexesResp  listEdgeIndexes(1: ListEdgeIndexesReq req);
     ExecResp             rebuildEdgeIndex(1: RebuildIndexReq req);
     ListIndexStatusResp  listEdgeIndexStatus(1: ListIndexStatusReq req);
+    ExecResp             rebuildSample(1: RebuildSampleReq req);
+    ListSampleStatusResp listSampleStatus(1: ListSampleStatusReq req);
 
     ExecResp createUser(1: CreateUserReq req);
     ExecResp dropUser(1: DropUserReq req);

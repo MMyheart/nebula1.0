@@ -187,7 +187,8 @@ bool PermissionManager::canShow(session::Session *session,
         case ShowSentence::ShowType::kShowCreateTagIndex:
         case ShowSentence::ShowType::kShowCreateEdgeIndex:
         case ShowSentence::ShowType::kShowTagIndexStatus:
-        case ShowSentence::ShowType::kShowEdgeIndexStatus: {
+        case ShowSentence::ShowType::kShowEdgeIndexStatus:
+        case ShowSentence::ShowType::kShowSampleStatus: {
             /**
              * Above operations can get the space id via session,
              * so the permission same with canReadSchemaOrData.

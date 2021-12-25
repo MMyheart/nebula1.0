@@ -3,6 +3,8 @@ set(GRAPH_TEST_LIBS
     $<TARGET_OBJECTS:graph_thrift_obj>
     $<TARGET_OBJECTS:kvstore_storage_utils_obj>
     $<TARGET_OBJECTS:storage_service_handler>
+    $<TARGET_OBJECTS:rand_obj>
+    $<TARGET_OBJECTS:alias_sample>
     $<TARGET_OBJECTS:storage_client>
     $<TARGET_OBJECTS:storage_thrift_obj>
     $<TARGET_OBJECTS:common_thrift_obj>

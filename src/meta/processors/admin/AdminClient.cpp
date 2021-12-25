@@ -484,6 +484,31 @@ void AdminClient::getResponse(
     });  // via
 }
 
+template <typename Request, typename RemoteFunc>
+folly::Future<storage::cpp2::RebuildSampleResponse>
+AdminClient::getResponse(const HostAddr& host, Request req, RemoteFunc remoteFunc) {
+    folly::Promise<storage::cpp2::RebuildSampleResponse> pro;
+    auto f = pro.getFuture();
+    auto* evb = ioThreadPool_->getEventBase();
+    folly::via(evb,
+               [evb,
+                pro = std::move(pro),
+                req = std::move(req),
+                host,
+                remoteFunc = std::move(remoteFunc),
+                this]() mutable {
+                   auto client = clientsMan_->client(host, evb);
+                   remoteFunc(client, std::move(req))
+                       .via(evb)
+                       .then([p = std::move(pro)](
+                                 folly::Try<storage::cpp2::RebuildSampleResponse>&& t) mutable {
+                           // exception occurred during RPC
+                           p.setValue(std::move(t).value());
+                       });
+               });
+    return f;
+}
+
 nebula::cpp2::HostAddr AdminClient::toThriftHost(const HostAddr& addr) {
     nebula::cpp2::HostAddr thriftAddr;
     thriftAddr.set_ip(addr.first);
@@ -684,6 +709,29 @@ folly::Future<Status> AdminClient::rebuildEdgeIndex(const HostAddr& address,
         return client->future_rebuildEdgeIndex(request);
     }, 0, std::move(pro), 1);
     return f;
+}
+
+folly::Future<storage::cpp2::RebuildSampleResponse> AdminClient::rebuildSample(
+    const HostAddr& address,
+    GraphSpaceID spaceId,
+    std::vector<PartitionID> parts,
+    std::vector<TagID> tagIds,
+    std::vector<EdgeType> edgeTypes) {
+    //    if (injector_) {
+    //        return injector_->rebuildEdgeIndex();
+    //    }
+    nebula::cpp2::HostAddr hostAddr;
+    hostAddr.set_ip(address.first);
+    hostAddr.set_port(address.second);
+    storage::cpp2::RebuildSampleRequest req;
+    req.set_space_id(spaceId);
+    req.set_parts(std::move(parts));
+    req.set_tagIds(std::move(tagIds));
+    req.set_edgeTypes(std::move(edgeTypes));
+    req.set_host(hostAddr);
+    return getResponse(std::move(address), std::move(req), [](auto client, auto request) {
+        return client->future_rebuildSample(request);
+    });
 }
 
 }  // namespace meta

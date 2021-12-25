@@ -125,6 +125,13 @@ public:
                                            std::vector<PartitionID> parts,
                                            bool isOffline);
 
+    folly::Future<storage::cpp2::RebuildSampleResponse> rebuildSample(
+        const HostAddr& address,
+        GraphSpaceID spaceId,
+        std::vector<PartitionID> parts,
+        std::vector<TagID> tagIds,
+        std::vector<EdgeType> edgeTypes);
+
     FaultInjector* faultInjector() {
         return injector_.get();
     }
@@ -146,6 +153,11 @@ private:
                      int32_t retry,
                      folly::Promise<Status> pro,
                      int32_t retryLimit);
+
+    template <class Request, class RemoteFunc>
+    folly::Future<storage::cpp2::RebuildSampleResponse> getResponse(const HostAddr& host,
+                                                                    Request req,
+                                                                    RemoteFunc remoteFunc);
 
     void getLeaderDist(const HostAddr& host,
                        folly::Promise<StatusOr<storage::cpp2::GetLeaderResp>>&& pro,

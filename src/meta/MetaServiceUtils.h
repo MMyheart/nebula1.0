@@ -111,6 +111,18 @@ public:
 
     static nebula::cpp2::IndexItem parseIndex(const folly::StringPiece& rawData);
 
+    static std::string rebuildSampleTagStatus(GraphSpaceID space, TagID tagId);
+
+    static std::string rebuildSampleEdgeStatus(GraphSpaceID space, EdgeType edgeType);
+
+    static std::string rebuildSampleStatus(GraphSpaceID space);
+
+    static std::string rebuildSampleTagWeights(GraphSpaceID space, TagID tagId);
+
+    static std::string rebuildSampleEdgeWeights(GraphSpaceID space, EdgeType edgeType);
+
+    static std::string rebuildSampleWeights(GraphSpaceID space);
+
     static std::string rebuildIndexStatus(GraphSpaceID space,
                                           char type,
                                           const std::string& indexName);

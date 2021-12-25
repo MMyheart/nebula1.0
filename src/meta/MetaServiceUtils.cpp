@@ -26,6 +26,8 @@ const std::string kDefaultTable        = "__default__";        // NOLINT
 const std::string kSnapshotsTable      = "__snapshots__";      // NOLINT
 const std::string kLastUpdateTimeTable = "__last_update_time__"; // NOLINT
 const std::string kLeadersTable        = "__leaders__";          // NOLINT
+const std::string kSampleStatusTable   = "__sample_status__";      // NOLINT
+const std::string kSampleWeightsTable  = "__sample_weights__";    // NOLINT
 
 const std::string kHostOnline  = "Online";       // NOLINT
 const std::string kHostOffline = "Offline";      // NOLINT
@@ -347,6 +349,70 @@ nebula::cpp2::IndexItem MetaServiceUtils::parseIndex(const folly::StringPiece& r
     nebula::cpp2::IndexItem item;
     apache::thrift::CompactSerializer::deserialize(rawData, item);
     return item;
+}
+
+std::string MetaServiceUtils::rebuildSampleTagStatus(GraphSpaceID space,
+                                                     TagID tagId) {
+    std::string key;
+    key.reserve(kSampleStatusTable.size() + sizeof(GraphSpaceID)
+                + sizeof(char) + sizeof(TagID));
+    key.append(kSampleStatusTable.data(), kSampleStatusTable.size())
+       .append(reinterpret_cast<const char*>(&space), sizeof(GraphSpaceID))
+       .append(1, 'T')
+       .append(reinterpret_cast<const char*>(&tagId), sizeof(TagID));
+    return key;
+}
+
+std::string MetaServiceUtils::rebuildSampleEdgeStatus(GraphSpaceID space,
+                                                      EdgeType edgeType) {
+    std::string key;
+    key.reserve(kSampleStatusTable.size() + sizeof(GraphSpaceID)
+                + sizeof(char) + sizeof(EdgeType));
+    key.append(kSampleStatusTable.data(), kSampleStatusTable.size())
+        .append(reinterpret_cast<const char*>(&space), sizeof(GraphSpaceID))
+        .append(1, 'E')
+        .append(reinterpret_cast<const char*>(&edgeType), sizeof(EdgeType));
+    return key;
+}
+
+std::string MetaServiceUtils::rebuildSampleStatus(GraphSpaceID space) {
+    std::string key;
+    key.reserve(kSampleStatusTable.size() + sizeof(GraphSpaceID));
+    key.append(kSampleStatusTable.data(), kSampleStatusTable.size())
+        .append(reinterpret_cast<const char*>(&space), sizeof(GraphSpaceID));
+    return key;
+}
+
+std::string MetaServiceUtils::rebuildSampleTagWeights(GraphSpaceID space,
+                                                      TagID tagId) {
+    std::string key;
+    key.reserve(kSampleWeightsTable.size() + sizeof(GraphSpaceID)
+                + sizeof(char) + sizeof(TagID));
+    key.append(kSampleWeightsTable.data(), kSampleWeightsTable.size())
+        .append(reinterpret_cast<const char*>(&space), sizeof(GraphSpaceID))
+        .append(1, 'T')
+        .append(reinterpret_cast<const char*>(&tagId), sizeof(TagID));
+    return key;
+}
+
+std::string MetaServiceUtils::rebuildSampleEdgeWeights(GraphSpaceID space,
+                                                       EdgeType edgeType) {
+    std::string key;
+    key.reserve(kSampleWeightsTable.size() + sizeof(GraphSpaceID)
+                + sizeof(char) + sizeof(EdgeType));
+    key.append(kSampleWeightsTable.data(), kSampleWeightsTable.size())
+        .append(reinterpret_cast<const char*>(&space), sizeof(GraphSpaceID))
+        .append(1, 'E')
+        .append(reinterpret_cast<const char*>(&edgeType), sizeof(EdgeType));
+    return key;
+}
+
+std::string MetaServiceUtils::rebuildSampleWeights(GraphSpaceID space) {
+    std::string key;
+    key.reserve(kSampleWeightsTable.size() + sizeof(GraphSpaceID));
+    key.append(kSampleWeightsTable.data(), kSampleWeightsTable.size())
+        .append(reinterpret_cast<const char*>(&space), sizeof(GraphSpaceID));
+    return key;
 }
 
 // This method should replace with JobManager when it ready.

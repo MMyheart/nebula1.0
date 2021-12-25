@@ -238,4 +238,17 @@ std::string GroupClause::toString() const {
     return groupColumns_->toString();
 }
 
+std::string SampleLabels::toString() const {
+    std::string buf;
+    buf.reserve(256);
+    for (auto &label : labels_) {
+        buf += *label;
+        buf += ",";
+    }
+    if (!buf.empty()) {
+        buf.pop_back();
+    }
+    return buf;
+}
+
 }   // namespace nebula
